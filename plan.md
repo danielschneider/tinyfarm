@@ -241,3 +241,22 @@ If you want next, I can give you:
 	•	Or a way to structure 20+ levels without spaghetti code
 
 This one actually has legs. 🐑🚜
+
+
+If you want next, I can:
+	•	Add wandering pigs 🐖
+	•	Add floating +1 animations
+	•	Add slight farmer rotation
+	•	Add dust 💨 speed effect
+	•	Refactor into scalable 20+ level architecture
+
+farm at random spot
+farmer must carry items. carrying is slower. 
+fence around enrire arena
+do not automatically go home. 
+clicking on another item when holding an item will swap items. 
+items will stack in the farm
+
+sound and particles. 
+worter wie Super toll. 
+power ups wie traktor. 

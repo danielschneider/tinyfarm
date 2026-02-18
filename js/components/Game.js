@@ -4,7 +4,7 @@ function Game() {
   const FARM_X = 40;
   const FARM_Y = 40;
   const FARM_SIZE = 120;
-  const SPEED = 100; // pixels per second
+  const SPEED = 200; // pixels per second
 
   const [levelIndex, setLevelIndex] = useState(0);
   const [score, setScore] = useState(0);
