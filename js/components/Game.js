@@ -73,6 +73,63 @@ function Game() {
     };
   });
   const [animations, setAnimations] = useState([]);
+  const [particles, setParticles] = useState([]);
+
+  // Particle types with different effects
+  const PARTICLE_TYPES = {
+    happy: { emoji: ['✨', '⭐', '🌟', '💫'], duration: 1000, spread: 30 },
+    confetti: { emoji: ['🎊', '🎉', '🎈', '🎁'], duration: 1500, spread: 40 },
+    sparkles: { emoji: ['✨', '✨', '✨', '💥'], duration: 800, spread: 25 },
+    hearts: { emoji: ['❤️', '💛', '💚', '💙'], duration: 1200, spread: 35 },
+    stars: { emoji: ['⭐', '🌟', '⭐', '🌟'], duration: 1000, spread: 30 },
+    bubbles: { emoji: ['🫧', '🫧', '🫧', '💭'], duration: 1500, spread: 40 },
+    rainbows: { emoji: ['🌈', '🌈', '🌈', '🌈'], duration: 2000, spread: 50 },
+    fireworks: { emoji: ['🎆', '🎇', '💥', '✨'], duration: 1200, spread: 50 }
+  };
+
+  function createParticles(x, y, type = 'happy', count = 8) {
+    const particleType = PARTICLE_TYPES[type];
+    if (!particleType) return;
+
+    const newParticles = [];
+    for (let i = 0; i < count; i++) {
+      newParticles.push({
+        id: Date.now() + Math.random(),
+        x: x + (Math.random() - 0.5) * particleType.spread,
+        y: y + (Math.random() - 0.5) * particleType.spread,
+        emoji: particleType.emoji[Math.floor(Math.random() * particleType.emoji.length)],
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2 - 1, // Upward bias
+        life: 0,
+        maxLife: particleType.duration,
+        type: type
+      });
+    }
+    setParticles(prev => [...prev, ...newParticles]);
+  }
+
+  // Update particles
+  function updateParticles() {
+    const now = Date.now();
+    setParticles(prevParticles => {
+      return prevParticles.filter(particle => {
+        const age = now - particle.id; // Use id (timestamp) as birth time
+        return age < particle.maxLife;
+      }).map(particle => {
+        const age = now - particle.id;
+        const progress = age / particle.maxLife;
+        
+        return {
+          ...particle,
+          x: particle.x + particle.vx,
+          y: particle.y + particle.vy,
+          vx: particle.vx * 0.98, // Air resistance
+          vy: particle.vy + 0.05, // Gravity
+          life: age
+        };
+      });
+    });
+  }
 
   const startTimeRef = useRef(Date.now());
   const animationRef = useRef();
@@ -93,12 +150,16 @@ function Game() {
     }
   }, [levelIndex]);
 
-  function startLevel() {
-    console.log("Starting level:", levelIndex + 1);
-    // Generate new random farm position
-    setFarmPos(getRandomFarmPosition());
-    
-    const bounds = getPlayableBounds();
+   function startLevel() {
+     console.log("Starting level:", levelIndex + 1);
+     // Add level start particle effects
+     const startBounds = getPlayableBounds();
+     createParticles(startBounds.minX + (startBounds.maxX - startBounds.minX) / 2, startBounds.minY + 50, 'fireworks', 15);
+     
+     // Generate new random farm position
+     setFarmPos(getRandomFarmPosition());
+     
+     const bounds = getPlayableBounds();
     const range = getSpawnRange(levelIndex);
     const spawnCount =
       Math.floor(Math.random() * (range.max - range.min + 1)) +
@@ -143,8 +204,11 @@ function Game() {
     }, 1000);
   }
 
-  function update(timestamp) {
-    // Update farmer movement
+   function update(timestamp) {
+     // Update particles
+     updateParticles();
+
+     // Update farmer movement
     setFarmer((prev) => {
       if (!prev.targetId && !prev.carrying) return prev;
 
@@ -162,17 +226,21 @@ function Game() {
       }
 
       const dist = distance(prev, target);
-      if (dist < 5) {
+       if (dist < 5) {
         if (!prev.carrying) {
           // pick up
+          createParticles(prev.x, prev.y, 'sparkles', 8);
           return { ...prev, carrying: prev.targetId, targetId: null };
         } else {
           // deposit - remove item from field and add to farm
           const carriedItem = items.find((i) => i.id === prev.carrying);
-          if (carriedItem) {
-            setFarmItems((old) => [...old, carriedItem.type]);
-            createFloatingAnimation(prev.x, prev.y, "+1");
-          }
+           if (carriedItem) {
+             setFarmItems((old) => [...old, carriedItem.type]);
+             createFloatingAnimation(prev.x, prev.y, "+1");
+             // Add particle effects
+             const randomType = ['happy', 'confetti', 'sparkles', 'hearts'][Math.floor(Math.random() * 4)];
+             createParticles(prev.x, prev.y, randomType, 12);
+           }
           setItems((old) =>
             old.filter((i) => i.id !== prev.carrying)
           );
@@ -235,7 +303,7 @@ function Game() {
     // Only transition if we have no items, we're initialized, not already transitioning, and level has started
     if (items.length === 0 && gameInitialized && !transitioning && levelStarted) {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
-      const levelType = LEVELS[levelIndex % LEVELS.length]; // Cycle through levels
+       const levelType = LEVELS[levelIndex % LEVELS.length]; // Cycle through levels
       const targetTime = levelType.targetTime;
       const timeBonus =
         Math.max(0, Math.floor((targetTime - elapsed) / 5)) * 10;
@@ -243,6 +311,9 @@ function Game() {
       setScore((s) => s + timeBonus);
       setBonus(timeBonus);
       setTransitioning(true); // Prevent multiple transitions
+
+      // Add level completion particle effects
+      createParticles(farmPos.x + FARM_SIZE / 2, farmPos.y + FARM_SIZE / 2, 'rainbows', 20);
 
       setTimeout(() => {
         setLevelIndex((i) => i + 1); // Infinite level progression
@@ -307,17 +378,34 @@ function Game() {
       y: farmer.y,
       carrying: farmer.carrying ? items.find(i => i.id === farmer.carrying)?.type : null
     }),
-    animations.map(anim =>
-      React.createElement(
-        "div",
-        {
-          key: anim.id,
-          className: "floating-animation",
-          style: { left: `${anim.x}px`, top: `${anim.y}px` }
-        },
-        anim.text
-      )
-    ),
+     animations.map(anim =>
+       React.createElement(
+         "div",
+         {
+           key: anim.id,
+           className: "floating-animation",
+           style: { left: `${anim.x}px`, top: `${anim.y}px` }
+         },
+         anim.text
+       )
+     ),
+     particles.map(particle =>
+       React.createElement(
+         "div",
+         {
+           key: particle.id,
+           className: "particle",
+           style: {
+             left: `${particle.x}px`,
+             top: `${particle.y}px`,
+             fontSize: `${30 - particle.life / 50}px`,
+             opacity: 1 - (particle.life / particle.maxLife),
+             transform: `rotate(${particle.life * 2}deg)`
+           }
+         },
+         particle.emoji
+       )
+     ),
 
     React.createElement(ScoreBoard, {
       level: levelIndex + 1,

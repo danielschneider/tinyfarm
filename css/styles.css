@@ -141,3 +141,26 @@ body {
     transform: translateY(-120px);
   }
 }
+
+.particle {
+  position: absolute;
+  font-size: 30px;
+  user-select: none;
+  pointer-events: none;
+  z-index: 1001;
+  animation: particleFloat 3s ease-out forwards;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-30px) scale(1.2) rotate(180deg);
+  }
+  100% {
+    transform: translateY(-60px) scale(0.8) rotate(360deg);
+    opacity: 0;
+  }
+}
