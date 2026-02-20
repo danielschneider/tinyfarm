@@ -77,19 +77,24 @@ function Game() {
   const startTimeRef = useRef(Date.now());
   const animationRef = useRef();
 
-  useEffect(() => {
-    // Call startLevel when levelIndex changes, regardless of gameInitialized state
-    startLevel();
-  }, [levelIndex]);
-
   // Initialize game on mount
   useEffect(() => {
     if (!gameInitialized) {
       setGameInitialized(true);
+      startLevel();
     }
   }, []);
 
+  // Call startLevel when levelIndex changes
+  useEffect(() => {
+    if (gameInitialized && levelIndex > 0) {
+      console.log("Level index changed to:", levelIndex);
+      startLevel();
+    }
+  }, [levelIndex]);
+
   function startLevel() {
+    console.log("Starting level:", levelIndex + 1);
     // Generate new random farm position
     setFarmPos(getRandomFarmPosition());
     
@@ -102,12 +107,16 @@ function Game() {
     const newItems = [];
     // Generate unique IDs to avoid duplicates
     const uniqueId = Date.now(); // Use timestamp as base for uniqueness
+    const levelType = LEVELS[levelIndex % LEVELS.length]; // Cycle through levels
+    const isAnimal = levelType.emoji.match(/[🐑🐖🐓🐄🐇🐐]/); // Check if it's an animal
     for (let i = 0; i < spawnCount; i++) {
       newItems.push({
         id: uniqueId + i,
-        type: LEVELS[levelIndex].emoji,
+        type: levelType.emoji,
         x: Math.random() * (bounds.maxX - bounds.minX - 60) + bounds.minX + 30,
-        y: Math.random() * (bounds.maxY - bounds.minY - 60) + bounds.minY + 30
+        y: Math.random() * (bounds.maxY - bounds.minY - 60) + bounds.minY + 30,
+        vx: isAnimal ? (Math.random() - 0.5) * levelType.wanderSpeed : 0, // Use level-specific speed
+        vy: isAnimal ? (Math.random() - 0.5) * levelType.wanderSpeed : 0  // Use level-specific speed
       });
     }
 
@@ -135,6 +144,7 @@ function Game() {
   }
 
   function update(timestamp) {
+    // Update farmer movement
     setFarmer((prev) => {
       if (!prev.targetId && !prev.carrying) return prev;
 
@@ -180,6 +190,33 @@ function Game() {
       return { ...prev, x: prev.x + moveX, y: prev.y + moveY };
     });
 
+    // Update wandering animals
+    const bounds = getPlayableBounds();
+    setItems(prevItems => {
+      return prevItems.map(item => {
+        // All animals wander (sheep, pigs, chickens, cows, bunnies, goats)
+        if (item.type.match(/[🐑🐖🐓🐄🐇🐐]/) && item.vx !== undefined && item.vy !== undefined) {
+          let newX = item.x + item.vx;
+          let newY = item.y + item.vy;
+          let newVx = item.vx;
+          let newVy = item.vy;
+
+          // Bounce off walls
+          if (newX < bounds.minX || newX > bounds.maxX) {
+            newVx = -item.vx;
+            newX = Math.max(bounds.minX, Math.min(bounds.maxX, newX));
+          }
+          if (newY < bounds.minY || newY > bounds.maxY) {
+            newVy = -item.vy;
+            newY = Math.max(bounds.minY, Math.min(bounds.maxY, newY));
+          }
+
+          return { ...item, x: newX, y: newY, vx: newVx, vy: newVy };
+        }
+        return item;
+      });
+    });
+
     animationRef.current = requestAnimationFrame(update);
   }
 
@@ -188,21 +225,35 @@ function Game() {
     return () => cancelAnimationFrame(animationRef.current);
   });
 
+  // Track if we're in the process of transitioning levels
+  const [transitioning, setTransitioning] = useState(false);
+  // Track if the current level has been started (items have been spawned)
+  const [levelStarted, setLevelStarted] = useState(false);
+
   useEffect(() => {
-    if (items.length === 0 && gameInitialized) {
+    console.log("Level transition check - items:", items.length, "transitioning:", transitioning, "levelIndex:", levelIndex, "levelStarted:", levelStarted);
+    // Only transition if we have no items, we're initialized, not already transitioning, and level has started
+    if (items.length === 0 && gameInitialized && !transitioning && levelStarted) {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
-      const targetTime = LEVELS[levelIndex].targetTime;
+      const levelType = LEVELS[levelIndex % LEVELS.length]; // Cycle through levels
+      const targetTime = levelType.targetTime;
       const timeBonus =
         Math.max(0, Math.floor((targetTime - elapsed) / 5)) * 10;
 
       setScore((s) => s + timeBonus);
       setBonus(timeBonus);
+      setTransitioning(true); // Prevent multiple transitions
 
       setTimeout(() => {
-        setLevelIndex((i) => (i + 1) % LEVELS.length);
+        setLevelIndex((i) => i + 1); // Infinite level progression
+        setLevelStarted(false); // Reset for next level
+        setTransitioning(false); // Allow transitions again
       }, 2000);
+    } else if (items.length > 0 && !levelStarted) {
+      // Mark level as started when items are spawned
+      setLevelStarted(true);
     }
-  }, [items, gameInitialized]);
+  }, [items, gameInitialized, transitioning]);
 
   function handleItemClick(id) {
     // Use functional update to get the latest state
