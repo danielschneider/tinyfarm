@@ -83,7 +83,7 @@ function Game() {
     hearts: { emoji: ['❤️', '💛', '💚', '💙'], duration: 1200, spread: 35 },
     stars: { emoji: ['⭐', '🌟', '⭐', '🌟'], duration: 1000, spread: 30 },
     bubbles: { emoji: ['🫧', '🫧', '🫧', '💭'], duration: 1500, spread: 40 },
-    rainbows: { emoji: ['🌈', '🌈', '🌈', '🌈'], duration: 2000, spread: 50 },
+    rainbows: { emoji: ['🌈', '🌈', '🌈', '🌈'], duration: 2000, spread: 300 },
     fireworks: { emoji: ['🎆', '🎇', '💥', '✨'], duration: 1200, spread: 50 }
   };
 
@@ -154,7 +154,7 @@ function Game() {
      console.log("Starting level:", levelIndex + 1);
      // Add level start particle effects
      const startBounds = getPlayableBounds();
-     createParticles(startBounds.minX + (startBounds.maxX - startBounds.minX) / 2, startBounds.minY + 50, 'fireworks', 15);
+     //createParticles(startBounds.minX + (startBounds.maxX - startBounds.minX) / 2, startBounds.minY + 50, 'fireworks', 15);
      
      // Generate new random farm position
      setFarmPos(getRandomFarmPosition());
@@ -229,7 +229,7 @@ function Game() {
        if (dist < 5) {
         if (!prev.carrying) {
           // pick up
-          createParticles(prev.x, prev.y, 'sparkles', 8);
+         // createParticles(prev.x, prev.y, 'sparkles', 8);
           return { ...prev, carrying: prev.targetId, targetId: null };
         } else {
           // deposit - remove item from field and add to farm
