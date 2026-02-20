@@ -87,23 +87,6 @@ function Game() {
   useEffect(() => {
     if (!gameInitialized) {
       setGameInitialized(true);
-      // Force initial level start with proper bounds
-      setFarmPos(getRandomFarmPosition());
-      const bounds = getPlayableBounds();
-      const range = getSpawnRange(0);
-      const spawnCount = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-
-      const newItems = [];
-      for (let i = 0; i < spawnCount; i++) {
-        newItems.push({
-          id: i,
-          type: LEVELS[0].emoji,
-          x: Math.random() * (bounds.maxX - bounds.minX - 60) + bounds.minX + 30,
-          y: Math.random() * (bounds.maxY - bounds.minY - 60) + bounds.minY + 30
-        });
-      }
-      setItems(newItems);
-      startTimeRef.current = Date.now();
     }
   }, []);
 
@@ -118,9 +101,11 @@ function Game() {
       range.min;
 
     const newItems = [];
+    // Generate unique IDs to avoid duplicates
+    const uniqueId = Date.now(); // Use timestamp as base for uniqueness
     for (let i = 0; i < spawnCount; i++) {
       newItems.push({
-        id: i,
+        id: uniqueId + i,
         type: LEVELS[levelIndex].emoji,
         x: Math.random() * (bounds.maxX - bounds.minX - 60) + bounds.minX + 30,
         y: Math.random() * (bounds.maxY - bounds.minY - 60) + bounds.minY + 30
