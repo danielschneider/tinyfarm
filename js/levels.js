@@ -8,7 +8,7 @@ const LEVELS = [
 function getSpawnRange(levelIndex) {
   const level = levelIndex + 1;
   return {
-    min: 5 + (level - 1) * 3,
-    max: 15 + (level - 1) * 5
+    min: 3 + (level - 1) * 2,
+    max: 7 + (level - 1) * 4
   };
 }

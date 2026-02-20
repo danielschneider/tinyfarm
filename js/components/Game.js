@@ -3,8 +3,8 @@ function Game() {
 
   const FENCE_PADDING = 30;
   const FARM_SIZE = 120;
-  const BASE_SPEED = 200; // pixels per second
-  const CARRY_SPEED_FACTOR = 0.5; // 50% slower when carrying
+  const BASE_SPEED = 500; // pixels per second
+  const CARRY_SPEED_FACTOR = 0.7; // 50% slower when carrying
   const FENCE_OFFSET = 20; // Fence is 20px from edges
 
   // Get the playable area bounds (inside the fence)
@@ -14,7 +14,7 @@ function Game() {
     // Use a minimum size to ensure playable area exists
     const minSize = 200;
     const width = Math.max(window.innerWidth, minSize);
-    const height = Math.max(window.innerHeight, minSize);
+    const height = Math.max(window.innerHeight - 20, minSize); // Subtract 20px to ensure bottom is visible
     return {
       minX: fenceInset + padding,
       minY: fenceInset + padding,
@@ -77,10 +77,8 @@ function Game() {
   const animationRef = useRef();
 
   useEffect(() => {
-    if (!gameInitialized) {
-      setGameInitialized(true);
-      startLevel();
-    }
+    // Call startLevel when levelIndex changes, regardless of gameInitialized state
+    startLevel();
   }, [levelIndex]);
 
   // Initialize game on mount
