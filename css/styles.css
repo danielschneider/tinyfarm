@@ -120,3 +120,24 @@ body {
   padding: 10px 15px;
   border-radius: 8px;
 }
+
+.floating-animation {
+  position: absolute;
+  font-size: 36px;
+  font-weight: bold;
+  color: red;
+  pointer-events: none;
+  z-index: 1000;
+  animation: floatUp 3s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px);
+  }
+}

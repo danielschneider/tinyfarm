@@ -72,6 +72,7 @@ function Game() {
       carrying: null
     };
   });
+  const [animations, setAnimations] = useState([]);
 
   const startTimeRef = useRef(Date.now());
   const animationRef = useRef();
@@ -125,6 +126,14 @@ function Game() {
     return Math.hypot(a.x - b.x, a.y - b.y);
   }
 
+  function createFloatingAnimation(x, y, text) {
+    const id = Date.now() + Math.random();
+    setAnimations(prev => [...prev, { id, x, y, text }]);
+    setTimeout(() => {
+      setAnimations(prev => prev.filter(anim => anim.id !== id));
+    }, 1000);
+  }
+
   function update(timestamp) {
     setFarmer((prev) => {
       if (!prev.targetId && !prev.carrying) return prev;
@@ -152,6 +161,7 @@ function Game() {
           const carriedItem = items.find((i) => i.id === prev.carrying);
           if (carriedItem) {
             setFarmItems((old) => [...old, carriedItem.type]);
+            createFloatingAnimation(prev.x, prev.y, "+1");
           }
           setItems((old) =>
             old.filter((i) => i.id !== prev.carrying)
@@ -246,6 +256,17 @@ function Game() {
       y: farmer.y,
       carrying: farmer.carrying ? items.find(i => i.id === farmer.carrying)?.type : null
     }),
+    animations.map(anim =>
+      React.createElement(
+        "div",
+        {
+          key: anim.id,
+          className: "floating-animation",
+          style: { left: `${anim.x}px`, top: `${anim.y}px` }
+        },
+        anim.text
+      )
+    ),
 
     React.createElement(ScoreBoard, {
       level: levelIndex + 1,
