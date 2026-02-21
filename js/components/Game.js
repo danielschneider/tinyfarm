@@ -1,6 +1,107 @@
 function Game() {
   const { useState, useEffect, useRef } = React;
 
+  // Sound manager using Web Audio API
+  const audioContextRef = useRef(null);
+
+  // Initialize audio context on first user interaction (browser policy)
+  const initAudioContext = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    // Resume if suspended (browser autoplay policy)
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+  };
+
+  // Play bling bling coin sound effect (bright, fast, sparkly)
+  const playCoinSound = () => {
+    initAudioContext();
+    
+    const audioContext = audioContextRef.current;
+    if (!audioContext) return;
+
+    // Create oscillator for bling sound
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = 'square'; // Bright, metallic sound
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Bling sound pitch: starts very high, drops fast
+    const basePitch = 1200 + Math.random() * 600;
+    oscillator.frequency.setValueAtTime(basePitch, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(basePitch * 0.4, audioContext.currentTime + 0.1);
+
+    // Instant attack, very quick decay
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.6, audioContext.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.2);
+  };
+
+  // Play level completion jingle (2-second fast happy melody)
+  const playLevelCompleteJingle = () => {
+    initAudioContext();
+    
+    const audioContext = audioContextRef.current;
+    if (!audioContext) return;
+
+    // Fast melody notes (C major scale - higher octave)
+    const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 659.25, 523.25, 783.99];
+    const noteDurations = [0.2, 0.2, 0.2, 0.3, 0.2, 0.2, 0.2, 0.4];
+
+    notes.forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.25);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Envelope for each note - fast attack/decay
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime + index * 0.25);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + index * 0.25 + 0.02);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.25 + noteDurations[index]);
+
+      oscillator.start(audioContext.currentTime + index * 0.25);
+      oscillator.stop(audioContext.currentTime + index * 0.25 + noteDurations[index]);
+    });
+
+    // Fast bass notes for rhythm
+    const bassNotes = [261.63, 392.00, 261.63, 392.00];
+    bassNotes.forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.5);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime + index * 0.5);
+      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + index * 0.5 + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.5 + 0.3);
+
+      oscillator.start(audioContext.currentTime + index * 0.5);
+      oscillator.stop(audioContext.currentTime + index * 0.5 + 0.3);
+    });
+  };
+
+  // Play multiple bling sounds for bigger particle effects
+  const playCoinSoundEffect = (count = 1) => {
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => playCoinSound(), i * 40);
+    }
+  };
+
   const FENCE_PADDING = 30;
   const FARM_SIZE = 120;
   const BASE_SPEED = 500; // pixels per second
@@ -90,6 +191,16 @@ function Game() {
   function createParticles(x, y, type = 'happy', count = 8) {
     const particleType = PARTICLE_TYPES[type];
     if (!particleType) return;
+
+    // Play sound effect based on particle type
+    if (type === 'rainbows') {
+      // Level completion - play special jingle
+      playLevelCompleteJingle();
+    } else {
+      // Regular particles - play coin sound
+      const soundCount = type === 'fireworks' ? 3 : 1;
+      playCoinSoundEffect(soundCount);
+    }
 
     const newParticles = [];
     for (let i = 0; i < count; i++) {
@@ -352,7 +463,10 @@ function Game() {
 
   return React.createElement(
     "div",
-    { className: "game-container" },
+    { 
+      className: "game-container",
+      onClick: initAudioContext
+    },
 
     React.createElement("div", { className: "field" }),
     
