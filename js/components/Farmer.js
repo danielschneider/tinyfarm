@@ -1,6 +1,10 @@
 function Farmer({ x, y, carrying, powerUps }) {
   const hasTractor = powerUps.includes('tractor');
   const hasBackpack = powerUps.includes('backpack');
+  const hasRocket = powerUps.includes('rocket');
+  const hasLotty = powerUps.includes('lotty');
+  
+  const farmerEmoji = hasLotty ? "🏎️" : hasRocket ? "🚀" : hasTractor ? "🚜" : "👨‍🌾";
   
   return React.createElement(
     "div",
@@ -12,7 +16,7 @@ function Farmer({ x, y, carrying, powerUps }) {
       ? React.createElement(
           "span",
           { className: "farmer-with-item" },
-          React.createElement("span", { className: "farmer-emoji" }, hasTractor ? "🚜" : "👨‍🌾"),
+          React.createElement("span", { className: "farmer-emoji" }, farmerEmoji),
           React.createElement("span", { className: "carried-items" },
             carrying.map((itemId, index) => 
               React.createElement("span", { 
@@ -23,6 +27,6 @@ function Farmer({ x, y, carrying, powerUps }) {
             )
           )
         )
-      : (hasTractor ? "🚜" : "👨‍🌾")
+      : farmerEmoji
   );
 }
