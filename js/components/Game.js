@@ -164,13 +164,17 @@ function Game() {
   const [bonus, setBonus] = useState(0);
   const [items, setItems] = useState([]);
   const [farmItems, setFarmItems] = useState([]); // Items collected in farm
+  const [powerUps, setPowerUps] = useState([]); // Active power-ups on the field
   const [farmer, setFarmer] = useState(() => {
     const bounds = getPlayableBounds();
     return {
       x: (bounds.minX + bounds.maxX) / 2,
       y: (bounds.minY + bounds.maxY) / 2,
       targetId: null,
-      carrying: null
+      carrying: [], // Now an array to support multiple items
+      powerUps: [], // Active power-ups the farmer has (tractor, backpack)
+      isPowerUpTarget: false, // Indicates if target is a power-up
+      isFarmTarget: false // Indicates if target is the farm zone
     };
   });
   const [animations, setAnimations] = useState([]);
@@ -275,47 +279,76 @@ function Game() {
     }
   }, [levelIndex]);
 
-   function startLevel() {
-     console.log("Starting level:", levelIndex + 1);
-     // Add level start particle effects
-     const startBounds = getPlayableBounds();
-     //createParticles(startBounds.minX + (startBounds.maxX - startBounds.minX) / 2, startBounds.minY + 50, 'fireworks', 15);
-     
-     // Generate new random farm position
-     setFarmPos(getRandomFarmPosition());
-     
-     const bounds = getPlayableBounds();
-    const range = getSpawnRange(levelIndex);
-    const spawnCount =
-      Math.floor(Math.random() * (range.max - range.min + 1)) +
-      range.min;
+    function startLevel() {
+      console.log("Starting level:", levelIndex + 1);
+      // Add level start particle effects
+      const startBounds = getPlayableBounds();
+      //createParticles(startBounds.minX + (startBounds.maxX - startBounds.minX) / 2, startBounds.minY + 50, 'fireworks', 15);
+      
+      // Generate new random farm position
+      setFarmPos(getRandomFarmPosition());
+      
+      const bounds = getPlayableBounds();
+     const range = getSpawnRange(levelIndex);
+     const spawnCount =
+       Math.floor(Math.random() * (range.max - range.min + 1)) +
+       range.min;
 
-    const newItems = [];
-    // Generate unique IDs to avoid duplicates
-    const uniqueId = Date.now(); // Use timestamp as base for uniqueness
-    const levelType = LEVELS[levelIndex % LEVELS.length]; // Cycle through levels
-    const isAnimal = levelType.emoji.match(/[🐑🐖🐓🐄🐇🐐]/); // Check if it's an animal
-    for (let i = 0; i < spawnCount; i++) {
-      newItems.push({
-        id: uniqueId + i,
-        type: levelType.emoji,
-        x: Math.random() * (bounds.maxX - bounds.minX - 60) + bounds.minX + 30,
-        y: Math.random() * (bounds.maxY - bounds.minY - 60) + bounds.minY + 30,
-        vx: isAnimal ? (Math.random() - 0.5) * levelType.wanderSpeed : 0, // Use level-specific speed
-        vy: isAnimal ? (Math.random() - 0.5) * levelType.wanderSpeed : 0  // Use level-specific speed
-      });
-    }
+     const newItems = [];
+     // Generate unique IDs to avoid duplicates
+     const uniqueId = Date.now(); // Use timestamp as base for uniqueness
+     const levelType = LEVELS[levelIndex % LEVELS.length]; // Cycle through levels
+     const isAnimal = levelType.emoji.match(/[🐑🐖🐓🐄🐇🐐]/); // Check if it's an animal
+     for (let i = 0; i < spawnCount; i++) {
+       newItems.push({
+         id: uniqueId + i,
+         type: levelType.emoji,
+         x: Math.random() * (bounds.maxX - bounds.minX - 60) + bounds.minX + 30,
+         y: Math.random() * (bounds.maxY - bounds.minY - 60) + bounds.minY + 30,
+         vx: isAnimal ? (Math.random() - 0.5) * levelType.wanderSpeed : 0, // Use level-specific speed
+         vy: isAnimal ? (Math.random() - 0.5) * levelType.wanderSpeed : 0  // Use level-specific speed
+       });
+     }
 
-    setItems(newItems);
-    setFarmItems([]); // Clear farm items on new level
-    setFarmer((f) => ({
-      ...f,
-      targetId: null,
-      carrying: null
-    }));
-    startTimeRef.current = Date.now();
-    setBonus(0);
-  }
+     // Spawn power-ups - ensure only one of each type per level
+     const newPowerUps = [];
+     const powerUpTypes = ['🚜', '🎒']; // Tractor and Backpack
+     const powerUpCount = Math.random() < 0.6 ? 1 : (Math.random() < 0.3 ? 2 : 0); // 60% chance for 1, 30% for 2, 10% for 0
+     
+     const selectedTypes = [];
+     for (let i = 0; i < powerUpCount; i++) {
+       let powerUpType;
+       // Ensure only one of each type
+       if (selectedTypes.length === 0) {
+         powerUpType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+       } else {
+         powerUpType = powerUpTypes.find(type => !selectedTypes.includes(type));
+         if (!powerUpType) break; // No more unique types available
+       }
+       
+       newPowerUps.push({
+         id: uniqueId + spawnCount + i,
+         type: powerUpType,
+         x: Math.random() * (bounds.maxX - bounds.minX - 60) + bounds.minX + 30,
+         y: Math.random() * (bounds.maxY - bounds.minY - 60) + bounds.minY + 30
+       });
+       selectedTypes.push(powerUpType);
+     }
+
+     setItems(newItems);
+     setPowerUps(newPowerUps);
+     setFarmItems([]); // Clear farm items on new level
+     setFarmer((f) => ({
+       ...f,
+       targetId: null,
+       carrying: [],
+       powerUps: [], // Clear power-ups on new level
+       isPowerUpTarget: false,
+       isFarmTarget: false
+     }));
+     startTimeRef.current = Date.now();
+     setBonus(0);
+   }
 
   function distance(a, b) {
     return Math.hypot(a.x - b.x, a.y - b.y);
@@ -329,86 +362,153 @@ function Game() {
     }, 1000);
   }
 
-   function update(timestamp) {
-     // Update particles
-     updateParticles();
+    function update(timestamp) {
+      // Update particles
+      updateParticles();
 
-     // Update farmer movement
-    setFarmer((prev) => {
-      if (!prev.targetId && !prev.carrying) return prev;
+      // Update farmer movement
+     setFarmer((prev) => {
+       if (!prev.targetId && prev.carrying.length === 0) return prev;
 
-      let target;
-      let currentSpeed = BASE_SPEED;
+       let target;
+       let currentSpeed = BASE_SPEED;
 
-      if (prev.carrying) {
-        // Move to farm with slower speed
-        currentSpeed = BASE_SPEED * CARRY_SPEED_FACTOR;
-        target = { x: farmPos.x + FARM_SIZE / 2, y: farmPos.y + FARM_SIZE / 2 };
-      } else {
-        const item = items.find((i) => i.id === prev.targetId);
-        if (!item) return prev;
-        target = item;
-      }
+       // Apply tractor speed boost
+       if (prev.powerUps.includes('tractor')) {
+         currentSpeed = BASE_SPEED * 2; // Double speed with tractor
+       }
 
-      const dist = distance(prev, target);
-       if (dist < 5) {
-        if (!prev.carrying) {
-          // pick up
-         // createParticles(prev.x, prev.y, 'sparkles', 8);
-          return { ...prev, carrying: prev.targetId, targetId: null };
-        } else {
-          // deposit - remove item from field and add to farm
-          const carriedItem = items.find((i) => i.id === prev.carrying);
-           if (carriedItem) {
-             setFarmItems((old) => [...old, carriedItem.type]);
-             createFloatingAnimation(prev.x, prev.y, "+1");
-             // Add particle effects
-             const randomType = ['happy', 'confetti', 'sparkles', 'hearts'][Math.floor(Math.random() * 4)];
-             createParticles(prev.x, prev.y, randomType, 12);
+       if (prev.isFarmTarget) {
+         // Move to farm
+         const hasBackpack = prev.powerUps.includes('backpack');
+         const maxCarry = hasBackpack ? 2 : 1;
+         
+         // Slow down if carrying items
+         if (prev.carrying.length > 0) {
+           currentSpeed = BASE_SPEED * CARRY_SPEED_FACTOR;
+         }
+         
+         target = { x: farmPos.x + FARM_SIZE / 2, y: farmPos.y + FARM_SIZE / 2 };
+       } else {
+         // Check if target is a power-up
+         if (prev.isPowerUpTarget) {
+           const powerUp = powerUps.find((p) => p.id === prev.targetId);
+           if (powerUp) {
+             target = powerUp;
+           } else {
+             // Power-up might have been collected already
+             return { ...prev, targetId: null, isPowerUpTarget: false };
            }
-          setItems((old) =>
-            old.filter((i) => i.id !== prev.carrying)
-          );
-          setScore((s) => s + 1);
-          return { ...prev, carrying: null };
-        }
-      }
+         } else {
+           // Target is an item
+           const item = items.find((i) => i.id === prev.targetId);
+           if (item) {
+             target = item;
+           } else {
+             return { ...prev, targetId: null };
+           }
+         }
+       }
 
-      const dx = target.x - prev.x;
-      const dy = target.y - prev.y;
-      const len = Math.hypot(dx, dy);
-      const moveX = (dx / len) * (currentSpeed / 60);
-      const moveY = (dy / len) * (currentSpeed / 60);
+       const dist = distance(prev, target);
+        if (dist < 25) {
+         if (prev.isPowerUpTarget) {
+           // Collect power-up
+           const powerUp = powerUps.find((p) => p.id === prev.targetId);
+           if (powerUp) {
+             setPowerUps(prev => prev.filter(p => p.id !== powerUp.id));
+             const powerUpType = powerUp.type === '🚜' ? 'tractor' : 'backpack';
+             createParticles(powerUp.x, powerUp.y, 'sparkles', 15);
+             createFloatingAnimation(powerUp.x, powerUp.y, powerUp.type === '🚜' ? 'SPEED UP!' : 'DOUBLE CARRY!');
+             return {
+               ...prev,
+               powerUps: [...prev.powerUps, powerUpType],
+               targetId: null,
+               isPowerUpTarget: false
+             };
+           }
+         } else if (prev.isFarmTarget) {
+           // Deposit items at farm
+           prev.carrying.forEach(itemId => {
+             const carriedItem = items.find((i) => i.id === itemId);
+             if (carriedItem) {
+               setFarmItems((old) => [...old, carriedItem.type]);
+               createFloatingAnimation(prev.x, prev.y, "+1");
+               // Add particle effects
+               const randomType = ['happy', 'confetti', 'sparkles', 'hearts'][Math.floor(Math.random() * 4)];
+               createParticles(prev.x, prev.y, randomType, 12);
+             }
+           });
+           setItems((old) =>
+             old.filter((i) => !prev.carrying.includes(i.id))
+           );
+           setScore((s) => s + prev.carrying.length);
+           return { ...prev, carrying: [], targetId: null, isFarmTarget: false };
+         } else if (prev.carrying.length < (prev.powerUps.includes('backpack') ? 2 : 1)) {
+           // Pick up item if not carrying max capacity
+           return { ...prev, carrying: [...prev.carrying, prev.targetId], targetId: null };
+         } else {
+           // Already carrying max capacity, can't pick up more
+           return prev;
+         }
+       }
 
-      return { ...prev, x: prev.x + moveX, y: prev.y + moveY };
-    });
+       const dx = target.x - prev.x;
+       const dy = target.y - prev.y;
+       const len = Math.hypot(dx, dy);
+       const moveX = (dx / len) * (currentSpeed / 60);
+       const moveY = (dy / len) * (currentSpeed / 60);
 
-    // Update wandering animals
-    const bounds = getPlayableBounds();
-    setItems(prevItems => {
-      return prevItems.map(item => {
-        // All animals wander (sheep, pigs, chickens, cows, bunnies, goats)
-        if (item.type.match(/[🐑🐖🐓🐄🐇🐐]/) && item.vx !== undefined && item.vy !== undefined) {
-          let newX = item.x + item.vx;
-          let newY = item.y + item.vy;
-          let newVx = item.vx;
-          let newVy = item.vy;
+       return { ...prev, x: prev.x + moveX, y: prev.y + moveY };
+     });
 
-          // Bounce off walls
-          if (newX < bounds.minX || newX > bounds.maxX) {
-            newVx = -item.vx;
-            newX = Math.max(bounds.minX, Math.min(bounds.maxX, newX));
-          }
-          if (newY < bounds.minY || newY > bounds.maxY) {
-            newVy = -item.vy;
-            newY = Math.max(bounds.minY, Math.min(bounds.maxY, newY));
-          }
+     // Check for power-up collisions with farmer
+     const updatedPowerUps = [...powerUps];
+     setFarmer((prevFarmer) => {
+       for (let powerUp of updatedPowerUps) {
+         const dist = distance(prevFarmer, powerUp);
+         if (dist < 30) { // Collision radius
+           // Collect power-up
+           setPowerUps(prev => prev.filter(p => p.id !== powerUp.id));
+           // Add power-up effect
+           const powerUpType = powerUp.type === '🚜' ? 'tractor' : 'backpack';
+           createParticles(powerUp.x, powerUp.y, 'sparkles', 15);
+           createFloatingAnimation(powerUp.x, powerUp.y, powerUp.type === '🚜' ? 'SPEED UP!' : 'DOUBLE CARRY!');
+           return {
+             ...prevFarmer,
+             powerUps: [...prevFarmer.powerUps, powerUpType]
+           };
+         }
+       }
+       return prevFarmer;
+     });
 
-          return { ...item, x: newX, y: newY, vx: newVx, vy: newVy };
-        }
-        return item;
-      });
-    });
+     // Update wandering animals
+     const bounds = getPlayableBounds();
+     setItems(prevItems => {
+       return prevItems.map(item => {
+         // All animals wander (sheep, pigs, chickens, cows, bunnies, goats)
+         if (item.type.match(/[🐑🐖🐓🐄🐇🐐]/) && item.vx !== undefined && item.vy !== undefined) {
+           let newX = item.x + item.vx;
+           let newY = item.y + item.vy;
+           let newVx = item.vx;
+           let newVy = item.vy;
+
+           // Bounce off walls
+           if (newX < bounds.minX || newX > bounds.maxX) {
+             newVx = -item.vx;
+             newX = Math.max(bounds.minX, Math.min(bounds.maxX, newX));
+           }
+           if (newY < bounds.minY || newY > bounds.maxY) {
+             newVy = -item.vy;
+             newY = Math.max(bounds.minY, Math.min(bounds.maxY, newY));
+           }
+
+           return { ...item, x: newX, y: newY, vx: newVx, vy: newVy };
+         }
+         return item;
+       });
+     });
 
     animationRef.current = requestAnimationFrame(update);
   }
@@ -454,24 +554,36 @@ function Game() {
   function handleItemClick(id) {
     // Use functional update to get the latest state
     setFarmer((prevFarmer) => {
-      // If already carrying, drop current item and pick up new one (swap)
-      if (prevFarmer.carrying) {
-        // Drop the carried item back at current position
-        setItems((oldItems) =>
-          oldItems.map((i) =>
-            i.id === prevFarmer.carrying
-              ? { ...i, x: prevFarmer.x + 20, y: prevFarmer.y + 20 }
-              : i
-          )
-        );
-        return { ...prevFarmer, targetId: id, carrying: null };
-      } else if (!prevFarmer.targetId) {
-        // No target, set new target
-        return { ...prevFarmer, targetId: id };
+      // Check if farmer can carry more items
+      const hasBackpack = prevFarmer.powerUps.includes('backpack');
+      const maxCarry = hasBackpack ? 2 : 1;
+      
+      if (prevFarmer.carrying.length < maxCarry) {
+        // Can carry more - set target to pick up
+        return { ...prevFarmer, targetId: id, isPowerUpTarget: false, isFarmTarget: false };
       } else {
-        // Already have a target, swap to new item
-        return { ...prevFarmer, targetId: id };
+        // Already carrying max capacity - can't carry more
+        return prevFarmer;
       }
+    });
+  }
+
+  // Handle power-up click
+  function handlePowerUpClick(id) {
+    setFarmer((prevFarmer) => {
+      // Set power-up as target
+      return { ...prevFarmer, targetId: id, isPowerUpTarget: true, isFarmTarget: false };
+    });
+  }
+
+  // Handle farm zone click
+  function handleFarmClick() {
+    setFarmer((prevFarmer) => {
+      if (prevFarmer.carrying.length > 0) {
+        // If carrying items, set target to farm to deposit
+        return { ...prevFarmer, isFarmTarget: true, targetId: null, isPowerUpTarget: false };
+      }
+      return prevFarmer;
     });
   }
 
@@ -490,10 +602,20 @@ function Game() {
     React.createElement(FarmZone, { 
       x: farmPos.x, 
       y: farmPos.y,
-      items: farmItems
+      items: farmItems,
+      onClick: handleFarmClick
     }),
 
-    items.filter((item) => item.id !== farmer.carrying).map((item) =>
+    // Render power-ups
+    powerUps.map((powerUp) =>
+      React.createElement(PowerUp, {
+        key: powerUp.id,
+        powerUp,
+        onClick: handlePowerUpClick
+      })
+    ),
+
+    items.filter((item) => !farmer.carrying.includes(item.id)).map((item) =>
       React.createElement(Item, {
         key: item.id,
         item,
@@ -504,7 +626,8 @@ function Game() {
     React.createElement(Farmer, {
       x: farmer.x,
       y: farmer.y,
-      carrying: farmer.carrying ? items.find(i => i.id === farmer.carrying)?.type : null
+      carrying: farmer.carrying.map(itemId => items.find(i => i.id === itemId)?.type).filter(Boolean),
+      powerUps: farmer.powerUps
     }),
      animations.map(anim =>
        React.createElement(

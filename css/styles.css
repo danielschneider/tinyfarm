@@ -51,6 +51,28 @@ body {
   animation: bounce 0.5s ease infinite alternate;
 }
 
+.carried-items {
+  position: absolute;
+  top: -10px;
+  right: -15px;
+}
+
+.power-up {
+  animation: powerUpPulse 1s ease-in-out infinite alternate;
+  cursor: pointer;
+}
+
+@keyframes powerUpPulse {
+  from { 
+    transform: scale(1); 
+    filter: brightness(1);
+  }
+  to { 
+    transform: scale(1.15); 
+    filter: brightness(1.2);
+  }
+}
+
 @keyframes bounce {
   from { transform: translateY(0); }
   to { transform: translateY(-5px); }

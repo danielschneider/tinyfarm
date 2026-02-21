@@ -1,4 +1,4 @@
-function FarmZone({ x, y, items = [] }) {
+function FarmZone({ x, y, items = [], onClick }) {
   // Display stacked items in the farm
   const displayItems = items.slice(-12); // Show max 12 items in farm
   
@@ -7,7 +7,7 @@ function FarmZone({ x, y, items = [] }) {
     {
       className: "farm-zone",
       style: { left: x + "px", top: y + "px" },
-      onClick: (e) => e.stopPropagation()
+      onClick: onClick
     },
     React.createElement(
       "div",
