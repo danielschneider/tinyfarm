@@ -1,4 +1,4 @@
-function FarmZone({ x, y, items = [], onClick }) {
+export function FarmZone({ x, y, items = [], onClick }) {
   // Display stacked items in the farm
   const displayItems = items.slice(-12); // Show max 12 items in farm
   

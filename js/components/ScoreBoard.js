@@ -1,4 +1,4 @@
-function ScoreBoard({ level, score, bonus }) {
+export function ScoreBoard({ level, score, bonus }) {
   return React.createElement(
     "div",
     { className: "scoreboard" },

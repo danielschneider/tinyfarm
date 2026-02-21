@@ -1,4 +1,4 @@
-function PowerUp({ powerUp, onClick }) {
+export function PowerUp({ powerUp, onClick }) {
   return React.createElement(
     "div",
     {

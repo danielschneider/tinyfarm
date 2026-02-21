@@ -1,4 +1,4 @@
-function Farmer({ x, y, carrying, powerUps }) {
+export function Farmer({ x, y, carrying, powerUps }) {
   const hasTractor = powerUps.includes('tractor');
   const hasBackpack = powerUps.includes('backpack');
   const hasRocket = powerUps.includes('rocket');

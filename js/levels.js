@@ -1,4 +1,4 @@
-const LEVELS = [
+export const LEVELS = [
   { name: "Sheep Roundup", emoji: "🐑", targetTime: 30, wanderSpeed: 0.3 },
   { name: "Corn Harvest", emoji: "🌽", targetTime: 40, wanderSpeed: 0 }, // Crops don't wander
   { name: "Pig Push", emoji: "🐖", targetTime: 50, wanderSpeed: 0.5 },
@@ -13,7 +13,7 @@ const LEVELS = [
   { name: "Potato Dig", emoji: "🥔", targetTime: 60, wanderSpeed: 0 } // Potatoes don't wander
 ];
 
-function getSpawnRange(levelIndex) {
+export function getSpawnRange(levelIndex) {
   const level = levelIndex + 1;
   return {
     min: 3 + (level - 1) * 2,

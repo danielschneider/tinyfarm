@@ -1,6 +1,6 @@
 const SHOW_DEBUG_INFO = false; // Set to false to hide debug info
 
-function Item({ item, onClick }) {
+export function Item({ item, onClick }) {
   return React.createElement(
     "div",
     {
