@@ -192,6 +192,12 @@ function Game() {
     const particleType = PARTICLE_TYPES[type];
     if (!particleType) return;
 
+    // Check if the particle origin is within the playable bounds
+    const bounds = getPlayableBounds();
+    if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) {
+      return; // Omit particle effects outside the fence
+    }
+
     // Play sound effect based on particle type
     if (type === 'rainbows') {
       // Level completion - play special jingle
@@ -204,10 +210,18 @@ function Game() {
 
     const newParticles = [];
     for (let i = 0; i < count; i++) {
+      // Calculate particle position and ensure it stays within bounds
+      let px = x + (Math.random() - 0.5) * particleType.spread;
+      let py = y + (Math.random() - 0.5) * particleType.spread;
+      
+      // Clamp particle position to playable bounds
+      px = Math.max(bounds.minX, Math.min(bounds.maxX, px));
+      py = Math.max(bounds.minY, Math.min(bounds.maxY, py));
+
       newParticles.push({
         id: Date.now() + Math.random(),
-        x: x + (Math.random() - 0.5) * particleType.spread,
-        y: y + (Math.random() - 0.5) * particleType.spread,
+        x: px,
+        y: py,
         emoji: particleType.emoji[Math.floor(Math.random() * particleType.emoji.length)],
         vx: (Math.random() - 0.5) * 2,
         vy: (Math.random() - 0.5) * 2 - 1, // Upward bias
