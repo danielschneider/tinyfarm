@@ -1,6 +1,6 @@
 // Game configuration
 export const CONFIG = {
-  enablePowerUps: false // Central switch to disable all power ups
+  enablePowerUps: true // Central switch to disable all power ups
 };
 
 // Game constants

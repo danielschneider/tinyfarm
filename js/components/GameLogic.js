@@ -53,7 +53,7 @@ export const updateFarmer = (prevFarmer, items, powerUps, farmPos, setFarmItems,
       maxCarry = 3; // Lotty: Carry 3 items
     }
   }
-
+  currentSpeed = Math.min(currentSpeed, 2500); // Cap speed to prevent excessive velocity
   if (prevFarmer.isFarmTarget) {
     // Move to farm - apply carry speed penalty if carrying items
     if (prevFarmer.carrying.length > 0) {
