@@ -1,5 +1,6 @@
 import { CONFIG, BASE_SPEED, CARRY_SPEED_FACTOR, FARM_SIZE, distance } from './GameConfig.js';
 import { createParticles } from './ParticleSystem.js';
+import { UPGRADES, getUpgradeLevel } from './UpgradeSystem.js';
 
 // Create floating animation
 export const createFloatingAnimation = (x, y, text) => {
@@ -33,12 +34,13 @@ export const setNextItemTarget = (farmer, items) => {
 };
 
 // Update farmer movement and interactions
-export const updateFarmer = (prevFarmer, items, powerUps, farmPos, setFarmItems, setScore, setItems, setPowerUps, createFloatingAnimation, getPlayableBounds) => {
+export const updateFarmer = (prevFarmer, items, powerUps, farmPos, setFarmItems, setScore, setItems, setPowerUps, createFloatingAnimation, getPlayableBounds, combo, setCombo, setComboTimer) => {
   if (!prevFarmer.targetId && prevFarmer.carrying.length === 0) return prevFarmer;
 
   let target;
-  let currentSpeed = BASE_SPEED;
-  let maxCarry = 1;
+  // Apply upgrades
+  let currentSpeed = BASE_SPEED * UPGRADES.speed.effect(getUpgradeLevel('speed'));
+  let maxCarry = UPGRADES.capacity.effect(getUpgradeLevel('capacity'));
 
   // Apply vehicle power-ups - only if enabled in config
   if (CONFIG.enablePowerUps) {
@@ -124,14 +126,31 @@ export const updateFarmer = (prevFarmer, items, powerUps, farmPos, setFarmItems,
           createFloatingAnimation(prevFarmer.x, prevFarmer.y, "+1");
           // Add particle effects
           const randomType = ['happy', 'confetti', 'sparkles', 'hearts'][Math.floor(Math.random() * 4)];
-          createParticles(prevFarmer.x, prevFarmer.y, randomType, 12, getPlayableBounds);
+           // Use special particle effects for higher combos
+           const particleType = combo >= 5 ? 'fireworks' : combo >= 3 ? 'confetti' : randomType;
+           const particleCount = combo >= 5 ? 20 : combo >= 3 ? 15 : 12;
+           createParticles(prevFarmer.x, prevFarmer.y, particleType, particleCount, getPlayableBounds);
         }
       });
       setItems((old) =>
         old.filter((i) => !prevFarmer.carrying.includes(i.id))
       );
-      setScore((s) => s + prevFarmer.carrying.length);
-      return { ...prevFarmer, carrying: [], targetId: null, isFarmTarget: false };
+       // Calculate combo bonus
+       const comboBonus = prevFarmer.carrying.length * combo;
+       const totalScore = prevFarmer.carrying.length + comboBonus;
+       setScore((s) => {
+         const newScore = s + totalScore;
+         // Update high score
+         if (newScore > parseInt(localStorage.getItem('tinyFarmHighScore') || 0)) {
+           localStorage.setItem('tinyFarmHighScore', newScore.toString());
+         }
+         return newScore;
+       });
+       // Increase combo
+       setCombo((c) => c + 1);
+       // Reset combo timer
+       setComboTimer(3000); // 3 seconds combo window
+       return { ...prevFarmer, carrying: [], targetId: null, isFarmTarget: false };
       } else {
           if (prevFarmer.carrying.length < maxCarry) {
             // Pick up item if not carrying max capacity

@@ -4,6 +4,11 @@ import { updateFarmer } from './GameLogic.js';
 import { updateParticles, createParticles } from './ParticleSystem.js';
 import { createFloatingAnimation } from './GameLogic.js';
 
+// Coin spawn configuration
+const COIN_SPAWN_INTERVAL = 5000; // Spawn a coin every 5 seconds
+const COIN_LIFETIME = 10000; // Coins disappear after 10 seconds
+let lastCoinSpawn = Date.now();
+
 export const updateGame = (
   particles,
   setParticles,
@@ -11,16 +16,39 @@ export const updateGame = (
   setPowerUps,
   items,
   setItems,
+  coins,
+  setCoins,
   farmer,
   setFarmer,
   farmPos,
   setFarmItems,
   setScore,
-  setAnimations
+  setAnimations,
+  combo,
+  setCombo,
+  setComboTimer
 ) => {
   // Update particles
   const updatedParticles = updateParticles(particles);
   setParticles(updatedParticles);
+
+  // Spawn coins randomly
+  const now = Date.now();
+  if (now - lastCoinSpawn > COIN_SPAWN_INTERVAL && coins.length < 3) { // Max 3 coins at a time
+    lastCoinSpawn = now;
+    const bounds = getPlayableBounds();
+    const newCoin = {
+      id: now + Math.random(),
+      x: Math.random() * (bounds.maxX - bounds.minX - 60) + bounds.minX + 30,
+      y: Math.random() * (bounds.maxY - bounds.minY - 60) + bounds.minY + 30,
+      value: 10, // Each coin gives 10 points
+      spawnTime: now
+    };
+    setCoins(prev => [...prev, newCoin]);
+  }
+
+  // Remove expired coins
+  setCoins(prev => prev.filter(coin => now - coin.spawnTime < COIN_LIFETIME));
 
   // Update farmer movement
   const currentPowerUps = [...powerUps];
@@ -43,7 +71,10 @@ export const updateGame = (
         setAnimations(prev => prev.filter(a => a.id !== anim.id));
       }, 1000);
     },
-    getPlayableBounds
+    getPlayableBounds,
+    combo,
+    setCombo,
+    setComboTimer
   ));
 
   // Check for power-up collisions with farmer - only if enabled in config
@@ -81,6 +112,30 @@ export const updateGame = (
       return prevFarmer;
     });
   }
+
+  // Check for coin collisions with farmer
+  setFarmer((prevFarmer) => {
+    for (let coin of coins) {
+      const dist = distance(prevFarmer, coin);
+      if (dist < 30) { // Collision radius
+        // Collect coin
+        setCoins(prev => prev.filter(c => c.id !== coin.id));
+        setScore(prev => prev + coin.value);
+        // Add particle effects (reduced for performance)
+        const newParticles = createParticles(coin.x, coin.y, 'coins', 8, getPlayableBounds);
+        const sparkles = createParticles(coin.x, coin.y, 'sparkles', 5, getPlayableBounds);
+        setParticles(prev => [...prev, ...newParticles, ...sparkles]);
+        // Create floating animation
+        const anim = createFloatingAnimation(coin.x, coin.y, `+${coin.value}`);
+        setAnimations(prev => [...prev, anim]);
+        setTimeout(() => {
+          setAnimations(prev => prev.filter(a => a.id !== anim.id));
+        }, 1000);
+        break; // Collect one coin at a time
+      }
+    }
+    return prevFarmer;
+  });
 
   // Update wandering animals
   const bounds = getPlayableBounds();

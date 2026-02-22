@@ -13,6 +13,7 @@ export const initializeGameState = () => {
     bonus: 0,
     items: [],
     farmItems: [], // Items collected in farm
+    coins: [], // Collectible coins
     powerUps: [], // Active power-ups on the field
     farmer: {
       x: (bounds.minX + bounds.maxX) / 2,
@@ -88,6 +89,7 @@ export const startLevel = (levelIndex, LEVELS) => {
   return {
     farmPos,
     items: newItems,
+    coins: [], // Clear coins on new level
     powerUps: newPowerUps,
     farmItems: [],
     farmer: {

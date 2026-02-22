@@ -4,12 +4,13 @@ import { FARM_SIZE } from './GameConfig.js';
 import { startLevel as startLevelState } from './GameState.js';
 import { createParticles } from './ParticleSystem.js';
 
-export const startLevel = (levelIndex, setFarmPos, setItems, setPowerUps, setFarmItems, setFarmer, setBonus, startTimeRef, getPlayableBounds) => {
+export const startLevel = (levelIndex, setFarmPos, setItems, setPowerUps, setFarmItems, setFarmer, setBonus, setCoins, startTimeRef, getPlayableBounds) => {
   console.log("Starting level:", levelIndex + 1);
   
   const levelState = startLevelState(levelIndex, LEVELS);
   setFarmPos(levelState.farmPos);
   setItems(levelState.items);
+  setCoins(levelState.coins);
   setPowerUps(levelState.powerUps);
   setFarmItems(levelState.farmItems);
   setFarmer(prev => ({ ...prev, ...levelState.farmer }));

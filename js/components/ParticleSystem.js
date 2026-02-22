@@ -9,7 +9,11 @@ export const PARTICLE_TYPES = {
   stars: { emoji: ['⭐', '🌟', '⭐', '🌟'], duration: 1000, spread: 30 },
   bubbles: { emoji: ['🫧', '🫧', '🫧', '💭'], duration: 1500, spread: 40 },
   rainbows: { emoji: ['🌈', '🌈', '🌈', '🌈'], duration: 2000, spread: 300 },
-  fireworks: { emoji: ['🎆', '🎇', '💥', '✨'], duration: 1200, spread: 50 }
+  fireworks: { emoji: ['🎆', '🎇', '💥', '✨'], duration: 1200, spread: 50 },
+  coins: { emoji: ['💰', '🪙', '💵', '💎'], duration: 1000, spread: 35 },
+  diamonds: { emoji: ['💎', '💎', '💎', '💎'], duration: 2000, spread: 30 },
+  magic: { emoji: ['🔮', '✨', '🌟', '💫'], duration: 1800, spread: 40 },
+  fire: { emoji: ['🔥', '🔥', '💥', '✨'], duration: 1000, spread: 35 }
 };
 
 // Create particles at a specific position
