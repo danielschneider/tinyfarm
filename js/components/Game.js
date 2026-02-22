@@ -83,9 +83,10 @@ export function Game() {
       setLevelStarted,
       farmPos,
       setParticles,
-      getPlayableBounds
+      getPlayableBounds,
+      farmer
     );
-  }, [items, gameInitialized, transitioning]);
+  }, [items, gameInitialized, transitioning, farmer]);
 
   // Update game state
   function update(timestamp) {

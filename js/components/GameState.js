@@ -43,7 +43,8 @@ export const startLevel = (levelIndex, LEVELS) => {
 
   const newItems = [];
   // Generate unique IDs to avoid duplicates
-  const uniqueId = Date.now(); // Use timestamp as base for uniqueness
+  // Use combination of timestamp, level index, and random for maximum uniqueness
+  const uniqueId = Date.now() * 1000 + levelIndex * 100 + Math.floor(Math.random() * 100);
   const levelType = LEVELS[levelIndex % LEVELS.length]; // Cycle through levels
   const isAnimal = levelType.emoji.match(/[🐑🐖🐓🐄🐇🐐]/); // Check if it's an animal
   for (let i = 0; i < spawnCount; i++) {

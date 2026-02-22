@@ -17,10 +17,10 @@ export const startLevel = (levelIndex, setFarmPos, setItems, setPowerUps, setFar
   startTimeRef.current = Date.now();
 };
 
-export const handleLevelTransition = (items, gameInitialized, transitioning, levelStarted, levelIndex, startTimeRef, setScore, setBonus, setTransitioning, setLevelIndex, setLevelStarted, farmPos, setParticles, getPlayableBounds) => {
-  console.log("Level transition check - items:", items.length, "transitioning:", transitioning, "levelIndex:", levelIndex, "levelStarted:", levelStarted);
-  // Only transition if we have no items, we're initialized, not already transitioning, and level has started
-  if (items.length === 0 && gameInitialized && !transitioning && levelStarted) {
+export const handleLevelTransition = (items, gameInitialized, transitioning, levelStarted, levelIndex, startTimeRef, setScore, setBonus, setTransitioning, setLevelIndex, setLevelStarted, farmPos, setParticles, getPlayableBounds, farmer) => {
+  console.log("Level transition check - items:", items.length, "farmer carrying:", farmer.carrying.length, "transitioning:", transitioning, "levelIndex:", levelIndex, "levelStarted:", levelStarted);
+  // Only transition if we have no items, farmer isn't carrying anything, we're initialized, not already transitioning, and level has started
+  if (items.length === 0 && farmer.carrying.length === 0 && gameInitialized && !transitioning && levelStarted) {
     const elapsed = (Date.now() - startTimeRef.current) / 1000;
     const levelType = LEVELS[levelIndex % LEVELS.length]; // Cycle through levels
     const targetTime = levelType.targetTime;
